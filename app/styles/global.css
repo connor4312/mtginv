@@ -1,0 +1,11 @@
+@font-face {
+  font-family: "Goudy Mediaeval Regular";
+  font-style: normal;
+  font-weight: normal;
+  src: local("Goudy Mediaeval Regular"),
+    url("/assets/GoudyMediaeval.woff") format("woff");
+}
+
+.border-radius-card {
+  border-radius: 5% / 3.6%;
+}

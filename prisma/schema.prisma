@@ -1,0 +1,124 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Color {
+  Red
+  Green
+  Blue
+  Black
+  White
+}
+
+enum Rarity {
+  Common
+  Uncommon
+  Rare
+  Special
+  Mythic
+  Bonus
+}
+
+model Set {
+  id          String    @id @db.Uuid
+  code        String
+  tcgPlayerId Int?
+  releaseDate DateTime?
+  name        String
+  cardCount   Int
+  scryfallUri String
+  iconUri     String
+  cards       Card[]
+}
+
+model Card {
+  id              String      @id @db.Uuid
+  oracleId        String?     @db.Uuid
+  collectorNumber String
+  tcgPlayerId     Int?
+  name            String
+  lang            String
+  edhrecRank      Int?
+  manaCost        String
+  rarity          Rarity
+  releasedAt      DateTime
+  scryfallUri     String
+  faces           Json        @db.Json
+  colorIdentity   Color[]
+  finishes        Json        @db.Json
+  setId           String      @db.Uuid
+  set             Set         @relation(fields: [setId], references: [id])
+  owned           OwnedCard[]
+}
+
+model User {
+  id         String      @id @default(uuid()) @db.Uuid
+  email      String      @unique
+  createdAt  DateTime    @default(now())
+  owned      OwnedCard[]
+  containers Container[]
+}
+
+enum Condition {
+  NM // near mint
+  LP // lighly played
+  MP // moderately played
+  HP // heavily played
+  DM // damaged
+  U // unopened
+}
+
+model OwnedCard {
+  id                String         @id @default(uuid()) @db.Uuid
+  cardId            String         @db.Uuid
+  userId            String         @db.Uuid
+  proxy             Boolean        @default(false)
+  condition         Condition
+  finish            Int
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  card              Card           @relation(fields: [cardId], references: [id])
+  locations         CardLocation[]
+}
+
+model CardLocation {
+  id              String     @id @default(uuid()) @db.Uuid
+  cardId          String     @db.Uuid
+  containerId     String     @db.Uuid
+  isCurrent       Boolean
+  x               Float
+  y               Float
+  z               Float
+  container       Container  @relation(fields: [containerId], references: [id], onDelete: Cascade)
+  ownedCard       OwnedCard  @relation(fields: [cardId], references: [id], onDelete: Cascade)
+}
+
+enum ContainerKind {
+  // Unordered piles of cards. Coordinates have no meaning.
+  Deck
+  // Similar to a deck, but with different UI.
+  List
+  // Boxes with a defined number of columns (in Y). X/Z are unbounded and are just
+  // used for ordering.
+  StorageBox
+  // Double sided binder, pages are Z (where 0 and 1 are the front and back
+  // of the first page) and x and y are positions on those pages.
+  Binder
+}
+
+model Container {
+  id       String         @id @default(uuid()) @db.Uuid
+  name     String
+  userId   String         @db.Uuid
+  kind     ContainerKind
+  maxX     Int
+  maxY     Int
+  maxZ     Int
+  public   Boolean        @default(false)
+  contents CardLocation[]
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
