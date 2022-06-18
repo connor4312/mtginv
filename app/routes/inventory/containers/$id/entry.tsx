@@ -8,17 +8,23 @@ import {
   useLoaderData,
 } from "remix";
 import { ConditionSelect } from "~/components/card/condition";
-import { CardImage, OwnedCardComponent } from "~/components/card/image";
+import {
+  CardImage,
+  CardPlaceholder,
+  OwnedCardComponent,
+} from "~/components/card/image";
+import { Container as UIContainer } from "~/components/ui/container";
+import { Header } from "~/components/ui/header";
 import { BlockHint } from "~/components/ui/hintText";
 import { Input, Select } from "~/components/ui/input";
 import { PageTitle } from "~/components/ui/pageTitle";
+import { classes } from "~/components/util/classes";
 import * as card from "~/models/card.server";
 import * as mtgCards from "~/models/card.server";
 import * as containers from "~/models/container.server";
 import * as mtgSets from "~/models/set.server";
 import { PrefixTree } from "~/prefix-tree";
 import { mustGetUser } from "~/session.server";
-import { classes } from "../../../../components/util/classes";
 
 export const loader: LoaderFunction = async ({ request, params }) => {
   return json<LoaderData>({
@@ -124,77 +130,92 @@ export default function Products() {
   }, [currentSet]);
 
   return (
-    <div>
+    <>
+      <Header category="Inventory" />
       <PageTitle>Add Cards</PageTitle>
-      <form
-        method="post"
-        className="mb-2 flex gap-2"
-        onSubmit={(e) => {
-          e.preventDefault();
-          submitFetcher.submit(e.target as HTMLFormElement);
-        }}
-      >
-        <Select
-          value={currentSet}
-          className="w-48"
-          onChange={(e) => setCurrentSet(e.target.value)}
-        >
-          <option value="">Pick Set</option>
-          <option value="*">All Sets</option>
-          <>
-            {sets.map((s) => (
-              <option value={s.id} key={s.id}>
-                {s.code.toUpperCase()}: {s.name}
-              </option>
-            ))}
-          </>
-        </Select>
-        <Input
-          placeholder="Card name..."
-          containerClassName="grow"
-          value={query}
-          onKeyDown={useCallback((e: React.KeyboardEvent) => {
-            switch (e.key) {
-              case "ArrowLeft":
-                setSelected((s) => (s === 0 ? DISPLAYED_RESULTS - 1 : s - 1));
-                break;
-              case "ArrowRight":
-                setSelected((s) => (s + 1) % DISPLAYED_RESULTS);
-                break;
-              default:
-                return;
-            }
+      <UIContainer>
+        <form
+          method="post"
+          className="mb-2 flex gap-2"
+          onSubmit={(e) => {
             e.preventDefault();
-          }, [])}
-          onChange={useCallback((e) => {
-            setQuery(e.target.value);
-            setSelected(0);
-            setCurrentSet((s) => s || ANY_SET);
-          }, [])}
-        />
-        <ConditionSelect name="condition" className="w-32" defaultValue="LP" />
-        <input
-          type="hidden"
-          name="cardId"
-          value={searchResults[selected]?.value.id}
-        />
-        <input type="hidden" name="action" value={ActionType.Add} />
-        <input type="hidden" name="finish" value="1" />
-      </form>
-      <Hint />
-      <ul className="flex overflow-hidden">
-        {searchResults.slice(0, 6).map(({ value }, i) => (
-          <div className="w-1/2 md:w-1/4 lg:w-1/6" key={value.id}>
-            <CardButton card={value} selected={selected === i} />
+            submitFetcher.submit(e.target as HTMLFormElement);
+          }}
+        >
+          <Select
+            value={currentSet}
+            className="w-48"
+            onChange={(e) => setCurrentSet(e.target.value)}
+          >
+            <option value="">Pick Set</option>
+            <option value="*">All Sets</option>
+            <>
+              {sets.map((s) => (
+                <option value={s.id} key={s.id}>
+                  {s.code.toUpperCase()}: {s.name}
+                </option>
+              ))}
+            </>
+          </Select>
+          <Input
+            placeholder="Card name..."
+            containerClassName="grow"
+            type="search"
+            autoCorrect="off"
+            autoFocus
+            autoCapitalize="off"
+            value={query}
+            onKeyDown={useCallback((e: React.KeyboardEvent) => {
+              switch (e.key) {
+                case "ArrowLeft":
+                  setSelected((s) => (s === 0 ? DISPLAYED_RESULTS - 1 : s - 1));
+                  break;
+                case "ArrowRight":
+                  setSelected((s) => (s + 1) % DISPLAYED_RESULTS);
+                  break;
+                default:
+                  return;
+              }
+              e.preventDefault();
+            }, [])}
+            onChange={useCallback((e) => {
+              setQuery(e.target.value);
+              setSelected(0);
+              setCurrentSet((s) => s || ANY_SET);
+            }, [])}
+          />
+          <ConditionSelect
+            name="condition"
+            className="w-32"
+            defaultValue="LP"
+          />
+          <input
+            type="hidden"
+            name="cardId"
+            value={searchResults[selected]?.value.id}
+          />
+          <input type="hidden" name="action" value={ActionType.Add} />
+          <input type="hidden" name="finish" value="1" />
+        </form>
+        <Hint />
+      </UIContainer>
+      {!!searchResults.length && (
+        <ul className="flex justify-center overflow-hidden bg-zinc-100 py-4">
+          {searchResults.slice(0, 6).map(({ value }, i) => (
+            <div className="w-1/2 md:w-1/4 lg:w-1/6" key={value.id}>
+              <CardButton card={value} selected={selected === i} />
+            </div>
+          ))}
+        </ul>
+      )}
+      <UIContainer>
+        {contents.map((c) => (
+          <div className="w-1/2 md:w-1/4 lg:w-1/6" key={c.id}>
+            <OwnedCardComponent card={c} />
           </div>
         ))}
-      </ul>
-      {contents.map((c) => (
-        <div className="w-1/2 md:w-1/4 lg:w-1/6" key={c.id}>
-          <OwnedCardComponent card={c} />
-        </div>
-      ))}
-    </div>
+      </UIContainer>
+    </>
   );
 }
 
@@ -225,16 +246,32 @@ const Hint: React.FC = () => {
 };
 
 const CardButton: React.FC<{
-  card: card.ICardWithName,
+  card: card.ICardWithName;
   selected?: boolean;
-}> = ({ card, selected }) => (
-  <button
-    className={classes(
-      "w-full rounded-sm p-4",
-      selected && "ring-2 ring-sky-600 ring-offset-sky-300"
-    )}
-  >
-    <CardImage id={card.id} name={card.name} />
-    {card.set.name}
-  </button>
-);
+}> = ({ card, selected }) => {
+  const [revealed, setRevealed] = useState(false);
+
+  // delay loading the card images to avoid lots of network req's while
+  // the user is typing
+  useEffect(() => {
+    setRevealed(false);
+    const timeout = setTimeout(() => setRevealed(true), 500);
+    return () => clearTimeout(timeout);
+  }, [card]);
+
+  return (
+    <button
+      className={classes(
+        "w-full rounded-sm p-4",
+        selected && "ring-2 ring-sky-600 ring-offset-sky-300"
+      )}
+    >
+      {revealed ? (
+        <CardImage id={card.id} name={card.name} />
+      ) : (
+        <CardPlaceholder />
+      )}
+      <small className="text-xs">{card.set.name}</small>
+    </button>
+  );
+};

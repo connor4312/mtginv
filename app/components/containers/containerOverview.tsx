@@ -7,7 +7,7 @@ export const ContainerOverview: React.FC<{ container: OverviewModel }> = ({
 }) => {
   return (
     <div>
-      <h2 className="font-serif">{container.name}</h2>
+      <h2>{container.name}</h2>
       Contains:
       <ul>
         {container.contents.map((c, i) => (

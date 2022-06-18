@@ -48,7 +48,7 @@ export default function App() {
         <Meta />
         <Links />
       </head>
-      <body className="font-poppins h-full p-10">
+      <body className="font-poppins h-full text-zinc-700">
         <Outlet />
         <ScrollRestoration />
         <Scripts />
